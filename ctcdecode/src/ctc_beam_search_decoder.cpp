@@ -120,6 +120,8 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
           if (ext_scorer != nullptr &&
               (c == space_id || ext_scorer->is_character_based())) {
             PathTrie *prefix_to_score = nullptr;
+            // std::cout<<"LM is used"<<std::endl;
+
             // skip scoring the space
             if (ext_scorer->is_character_based()) {
               prefix_to_score = prefix_new;

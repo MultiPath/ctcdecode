@@ -62,13 +62,13 @@ void Scorer::load_lm(const std::string& lm_path) {
   language_model_ = lm::ngram::LoadVirtual(filename, config);
   max_order_ = static_cast<lm::base::Model*>(language_model_)->Order();
   vocabulary_ = enumerate.vocabulary;
-  for (size_t i = 0; i < vocabulary_.size(); ++i) {
-    if (is_character_based_ && vocabulary_[i] != UNK_TOKEN &&
-        vocabulary_[i] != START_TOKEN && vocabulary_[i] != END_TOKEN &&
-        get_utf8_str_len(enumerate.vocabulary[i]) > 1) {
-      is_character_based_ = false;
-    }
-  }
+  // for (size_t i = 0; i < vocabulary_.size(); ++i) {
+  //   if (is_character_based_ && vocabulary_[i] != UNK_TOKEN &&
+  //       vocabulary_[i] != START_TOKEN && vocabulary_[i] != END_TOKEN &&
+  //       get_utf8_str_len(enumerate.vocabulary[i]) > 1) {
+  //     is_character_based_ = false;
+  //   }
+  // }
 }
 
 double Scorer::get_log_cond_prob(const std::vector<std::string>& words) {

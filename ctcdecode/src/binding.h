@@ -1,4 +1,5 @@
 int paddle_beam_decode(THFloatTensor *th_probs,
+                       THIntTensor *th_index,
                        THIntTensor *th_seq_lens,
                        std::vector<std::string> labels,
                        int vocab_size,
@@ -15,6 +16,7 @@ int paddle_beam_decode(THFloatTensor *th_probs,
 
 
 int paddle_beam_decode_lm(THFloatTensor *th_probs,
+                          THIntTensor *th_index,
                           THIntTensor *th_seq_lens,
                           std::vector<std::string> labels,
                           int vocab_size,

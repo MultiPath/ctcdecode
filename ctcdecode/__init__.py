@@ -37,7 +37,7 @@ class CTCBeamDecoder(object):
                                                         self._num_labels)
         self._cutoff_prob = cutoff_prob
 
-    def decode(self, probs, seq_lens=None):
+    def decode(self, probs, idx, seq_lens=None):
         """
         Conducts the beamsearch on model outputs and return results.
         Args:
@@ -62,6 +62,7 @@ class CTCBeamDecoder(object):
 
         """
         probs = probs.cpu().float()
+        idx = idx.cpu().int()
         batch_size, max_seq_len = probs.size(0), probs.size(1)
         if seq_lens is None:
             seq_lens = torch.IntTensor(batch_size).fill_(max_seq_len)
@@ -71,12 +72,13 @@ class CTCBeamDecoder(object):
         timesteps = torch.IntTensor(batch_size, self._beam_width, max_seq_len).cpu().int()
         scores = torch.FloatTensor(batch_size, self._beam_width).cpu().float()
         out_seq_len = torch.zeros(batch_size, self._beam_width).cpu().int()
+        # from fairseq import pdb; pdb.set_trace()
         if self._scorer:
-            ctc_decode.paddle_beam_decode_lm(probs, seq_lens, self._labels, self._num_labels, self._beam_width,
+            ctc_decode.paddle_beam_decode_lm(probs, idx, seq_lens, self._labels, self._num_labels, self._beam_width,
                                              self._num_processes, self._cutoff_prob, self.cutoff_top_n, self._blank_id,
                                              self._log_probs, self._scorer, output, timesteps, scores, out_seq_len)
         else:
-            ctc_decode.paddle_beam_decode(probs, seq_lens, self._labels, self._num_labels, self._beam_width,
+            ctc_decode.paddle_beam_decode(probs, idx, seq_lens, self._labels, self._num_labels, self._beam_width,
                                           self._num_processes,
                                           self._cutoff_prob, self.cutoff_top_n, self._blank_id, self._log_probs,
                                           output, timesteps, scores, out_seq_len)

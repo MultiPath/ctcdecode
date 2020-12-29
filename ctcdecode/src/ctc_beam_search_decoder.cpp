@@ -53,16 +53,16 @@ DecoderState::DecoderState(const std::vector<std::string> &vocabulary,
 }
 
 void
-DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
+DecoderState::next(const std::vector<std::vector<std::pair<size_t, float>>> &probs_seq)
 {
   // dimension check
   size_t num_time_steps = probs_seq.size();
-  for (size_t i = 0; i < num_time_steps; ++i) {
-    VALID_CHECK_EQ(probs_seq[i].size(),
-                   vocabulary.size(),
-                   "The shape of probs_seq does not match with "
-                   "the shape of the vocabulary");
-  }
+  // for (size_t i = 0; i < num_time_steps; ++i) {
+  //   VALID_CHECK_EQ(probs_seq[i].size(),
+  //                  vocabulary.size(),
+  //                  "The shape of probs_seq does not match with "
+  //                  "the shape of the vocabulary");
+  // }
 
   // prefix search over time
   for (size_t time_step = 0; time_step < num_time_steps; ++time_step, ++abs_time_step) {
@@ -74,14 +74,15 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
       size_t num_prefixes = std::min(prefixes.size(), beam_size);
       std::sort(
           prefixes.begin(), prefixes.begin() + num_prefixes, prefix_compare);
-      float blank_prob = log_input ? prob[blank_id] : std::log(prob[blank_id]);
+      float blank_prob = log_input ? prob.back().second : std::log(prob.back().second);
       min_cutoff = prefixes[num_prefixes - 1]->score +
                    blank_prob - std::max(0.0, ext_scorer->beta);
       full_beam = (num_prefixes == beam_size);
     }
+    std::vector<std::pair<size_t, float>> log_prob_idx(prob.begin(), prob.end()-1);
 
-    std::vector<std::pair<size_t, float>> log_prob_idx =
-        get_pruned_log_probs(prob, cutoff_prob, cutoff_top_n, log_input);
+    // std::vector<std::pair<size_t, float>> log_prob_idx =
+    //     get_pruned_log_probs(prob, cutoff_prob, cutoff_top_n, log_input);
     // loop over chars
     for (size_t index = 0; index < log_prob_idx.size(); index++) {
       auto c = log_prob_idx[index].first;
@@ -120,6 +121,8 @@ DecoderState::next(const std::vector<std::vector<double>> &probs_seq)
           if (ext_scorer != nullptr &&
               (c == space_id || ext_scorer->is_character_based())) {
             PathTrie *prefix_to_score = nullptr;
+            // std::cout<<"LM is used"<<std::endl;
+
             // skip scoring the space
             if (ext_scorer->is_character_based()) {
               prefix_to_score = prefix_new;
@@ -210,7 +213,7 @@ DecoderState::decode() const
 }
 
 std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
-    const std::vector<std::vector<double>> &probs_seq,
+    const std::vector<std::vector<std::pair<size_t, float>>> &probs_seq,
     const std::vector<std::string> &vocabulary,
     size_t beam_size,
     double cutoff_prob,
@@ -228,7 +231,7 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
 
 std::vector<std::vector<std::pair<double, Output>>>
 ctc_beam_search_decoder_batch(
-    const std::vector<std::vector<std::vector<double>>> &probs_split,
+    const std::vector<std::vector<std::vector<std::pair<size_t, float>>>> &probs_split,
     const std::vector<std::string> &vocabulary,
     size_t beam_size,
     size_t num_processes,

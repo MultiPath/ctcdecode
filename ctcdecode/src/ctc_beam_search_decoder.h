@@ -26,7 +26,7 @@
 */
 
 std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
-    const std::vector<std::vector<double>> &probs_seq,
+    const std::vector<std::vector<std::pair<size_t, float>>> &probs_seq,
     const std::vector<std::string> &vocabulary,
     size_t beam_size,
     double cutoff_prob = 1.0,
@@ -54,7 +54,7 @@ std::vector<std::pair<double, Output>> ctc_beam_search_decoder(
 */
 std::vector<std::vector<std::pair<double, Output>>>
 ctc_beam_search_decoder_batch(
-    const std::vector<std::vector<std::vector<double>>> &probs_split,
+    const std::vector<std::vector<std::vector<std::pair<size_t, float>>>> &probs_split,
     const std::vector<std::string> &vocabulary,
     size_t beam_size,
     size_t num_processes,
@@ -106,7 +106,7 @@ public:
    *     probs: 2-D vector where each element is a vector of probabilities
    *               over alphabet of one time step.
   */
-  void next(const std::vector<std::vector<double>> &probs_seq);
+  void next(const std::vector<std::vector<std::pair<size_t, float>>> &probs_seq);
 
   /* Get current transcription from the decoder stream state
    *

@@ -33,6 +33,7 @@ boost::python::list std_vector_to_py_list(std::vector<T> vector) {
 }
 
 int beam_decode(at::Tensor th_probs,
+                at::Tensor th_index,
                 at::Tensor th_seq_lens,
                 std::vector<std::string> new_vocab,
                 int vocab_size,
@@ -54,20 +55,24 @@ int beam_decode(at::Tensor th_probs,
     }
     const int64_t max_time = th_probs.size(1);
     const int64_t batch_size = th_probs.size(0);
-    const int64_t num_classes = th_probs.size(2);
+    const int64_t num_classes = new_vocab.size();
+    const int64_t topk = th_probs.size(2);
+    // const int64_t num_classes = th_probs.size(2);
 
-    std::vector<std::vector<std::vector<double>>> inputs;
+    std::vector<std::vector<std::vector<std::pair<size_t, float>>>> inputs;
     auto prob_accessor = th_probs.accessor<float, 3>();
+    auto inx_accessor = th_index.accessor<int, 3>();
     auto seq_len_accessor = th_seq_lens.accessor<int, 1>();
 
     for (int b=0; b < batch_size; ++b) {
         // avoid a crash by ensuring that an erroneous seq_len doesn't have us try to access memory we shouldn't
         int seq_len = std::min((int)seq_len_accessor[b], (int)max_time);
-        std::vector<std::vector<double>> temp (seq_len, std::vector<double>(num_classes));
+        std::vector<std::vector<std::pair<size_t, float>>> temp (seq_len, std::vector<std::pair<size_t, float>>(topk));
         for (int t=0; t < seq_len; ++t) {
-            for (int n=0; n < num_classes; ++n) {
+            for (int n=0; n < topk; ++n) {
                 float val = prob_accessor[b][t][n];
-                temp[t][n] = val;
+                int id = inx_accessor[b][t][n];
+                temp[t][n] = std::make_pair(id, val);
             }
         }
         inputs.push_back(temp);
@@ -100,6 +105,7 @@ int beam_decode(at::Tensor th_probs,
 }
 
 int paddle_beam_decode(at::Tensor th_probs,
+                       at::Tensor th_index,
                        at::Tensor th_seq_lens,
                        std::vector<std::string> labels,
                        int vocab_size,
@@ -114,11 +120,12 @@ int paddle_beam_decode(at::Tensor th_probs,
                        at::Tensor th_scores,
                        at::Tensor th_out_length){
 
-    return beam_decode(th_probs, th_seq_lens, labels, vocab_size, beam_size, num_processes,
+    return beam_decode(th_probs, th_index, th_seq_lens, labels, vocab_size, beam_size, num_processes,
                 cutoff_prob, cutoff_top_n, blank_id, log_input, NULL, th_output, th_timesteps, th_scores, th_out_length);
 }
 
 int paddle_beam_decode_lm(at::Tensor th_probs,
+                          at::Tensor th_index,
                           at::Tensor th_seq_lens,
                           std::vector<std::string> labels,
                           int vocab_size,
@@ -134,7 +141,7 @@ int paddle_beam_decode_lm(at::Tensor th_probs,
                           at::Tensor th_scores,
                           at::Tensor th_out_length){
 
-    return beam_decode(th_probs, th_seq_lens, labels, vocab_size, beam_size, num_processes,
+    return beam_decode(th_probs, th_index, th_seq_lens, labels, vocab_size, beam_size, num_processes,
                 cutoff_prob, cutoff_top_n, blank_id, log_input, scorer, th_output, th_timesteps, th_scores, th_out_length);
 }
 
